@@ -38,9 +38,12 @@ function buildArgv(req: RunRequest): string[] {
     args.push("--allowedTools", ...req.allowedTools);
   }
 
-  // Headless non-interactive mode — required for MCP tool use without human approval prompts.
-  // "acceptEdits" lets claude call MCP tools without pausing for confirmation.
-  args.push("--permission-mode", "acceptEdits");
+  // Headless non-interactive mode. The bot runs UNATTENDED — there is never a
+  // human to approve a permission prompt, so any prompt would hang the run (the
+  // model then narrates a non-existent "approve in UI" step). bypassPermissions
+  // guarantees no prompt; the real tool boundary is --allowedTools + the Lark
+  // app's own granted scopes (a tool the bot has no scope for simply fails).
+  args.push("--permission-mode", "bypassPermissions");
 
   return args;
 }

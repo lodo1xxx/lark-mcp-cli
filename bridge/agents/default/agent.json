@@ -7,7 +7,11 @@
     "lark_doc_fetch",
     "lark_im_search",
     "lark_calendar_agenda",
-    "lark_task_my"
+    "lark_task_my",
+    "lark_base_search",
+    "lark_contact_search",
+    "lark_sheets_read",
+    "lark_api"
   ],
   "enabled": true
 }
