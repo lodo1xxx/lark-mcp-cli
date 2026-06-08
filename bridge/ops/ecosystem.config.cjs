@@ -18,10 +18,12 @@ module.exports = {
     {
       // ── Bridge daemon ───────────────────────────────────────────────
       name: "lark-bridge",
-      script: "npm",
-      args: "run start",
+      // Run tsx directly (not `npm run start`) so the bridge's stdout isn't
+      // buffered by the npm wrapper — pm2 then captures logs in real time.
+      script: "node_modules/.bin/tsx",
+      args: "src/index.ts",
       cwd: BRIDGE_DIR,
-      interpreter: "none",  // npm handles its own shell
+      interpreter: "none",
 
       // Restart policy
       autorestart: true,
