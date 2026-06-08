@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd plist — Lark Claude Bridge daemon (fallback to pm2).
+  Keeps the bridge running on login; restarts on crash via KeepAlive.
+
+  Install:
+    cp bridge/ops/com.transform.lark-bridge.plist ~/Library/LaunchAgents/
+    # Edit WorkingDirectory and ProgramArguments paths below to match your repo location.
+    launchctl load ~/Library/LaunchAgents/com.transform.lark-bridge.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.transform.lark-bridge.plist
+    rm ~/Library/LaunchAgents/com.transform.lark-bridge.plist
+
+  Logs: ~/lark-bridge-logs/launchd-{out,err}.log
+  Validate: plutil -lint ~/Library/LaunchAgents/com.transform.lark-bridge.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.transform.lark-bridge</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <!-- Absolute path to npm. Adjust if your npm is elsewhere. -->
+    <string>/usr/local/bin/npm</string>
+    <string>run</string>
+    <string>start</string>
+  </array>
+
+  <!-- EDIT: absolute path to your bridge/ directory -->
+  <key>WorkingDirectory</key>
+  <string>/Users/YOURUSERNAME/Documents/vibe/LarkCLI/lark-mcp-cli/bridge</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>PATH</key>
+    <!-- Extend PATH so tsx, lark-cli, claude are found -->
+    <string>/usr/local/bin:/usr/bin:/bin:/Users/YOURUSERNAME/.npm-global/bin:/Users/YOURUSERNAME/.local/bin</string>
+  </dict>
+
+  <!-- Restart on crash -->
+  <key>KeepAlive</key>
+  <true/>
+
+  <!-- Run at login -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Throttle rapid restart loops (seconds between restarts) -->
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/YOURUSERNAME/lark-bridge-logs/launchd-out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/YOURUSERNAME/lark-bridge-logs/launchd-err.log</string>
+</dict>
+</plist>

@@ -1,0 +1,13 @@
+{
+  "name": "default",
+  "model": "claude-sonnet-4-5",
+  "effort": null,
+  "allowedTools": [
+    "lark_doc_search",
+    "lark_doc_fetch",
+    "lark_im_search",
+    "lark_calendar_agenda",
+    "lark_task_my"
+  ],
+  "enabled": true
+}

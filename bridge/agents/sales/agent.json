@@ -1,0 +1,11 @@
+{
+  "name": "sales",
+  "model": "claude-sonnet-4-5",
+  "effort": null,
+  "allowedTools": [
+    "lark_base_search",
+    "lark_doc_fetch",
+    "lark_contact_search"
+  ],
+  "enabled": true
+}

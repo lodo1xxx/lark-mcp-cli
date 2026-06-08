@@ -44,6 +44,15 @@ cover*.out
 
 lark-env.sh
 
+# Bridge daemon runtime data
+bridge/data/
+bridge/node_modules/
+dashboard/.next/
+
+# Backups — contain PII + OAuth sessions, never commit
+lark-bridge-backups/
+~/lark-bridge-backups/
+
 # Secrets & local-only (never commit)
 .env
 .env.*

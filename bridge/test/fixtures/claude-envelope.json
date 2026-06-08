@@ -1,0 +1,20 @@
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "result": "2+2 equals 4.",
+  "session_id": "sess_TESTSESSION000001",
+  "total_cost_usd": 0.002735875,
+  "num_turns": 1,
+  "duration_ms": 1200,
+  "stop_reason": "end_turn",
+  "permission_denials": [],
+  "usage": {
+    "input_tokens": 512,
+    "output_tokens": 8,
+    "cache_creation_input_tokens": 1024,
+    "cache_read_input_tokens": 0,
+    "service_tier": "standard"
+  },
+  "modelUsage": {}
+}

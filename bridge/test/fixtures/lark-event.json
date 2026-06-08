@@ -1,0 +1,13 @@
+{
+  "type": "im.message.receive_v1",
+  "event_id": "evt_TESTEVENT0000001",
+  "timestamp": "1780857477320",
+  "id": "om_TESTMSGID0000000001",
+  "message_id": "om_TESTMSGID0000000001",
+  "create_time": "1780857477092",
+  "chat_id": "oc_TESTCHATID00000001",
+  "chat_type": "group",
+  "message_type": "text",
+  "sender_id": "ou_TESTUSER00000001",
+  "content": "@Test Bot what is 2+2?"
+}

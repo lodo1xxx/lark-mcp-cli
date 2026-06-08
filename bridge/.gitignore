@@ -1,0 +1,27 @@
+# Build output
+dist/
+
+# Runtime data (DB, logs) — never commit
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Config with real values — use config.example.json as template
+config.json
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+bridge/data/

@@ -1,0 +1,33 @@
+{
+  "port": 9820,
+  "lark_app_id": "cli_xxxxxxxxxxxxxxxx",
+  "claude_binary": "/path/to/claude",
+  "lark_cli_binary": "/path/to/lark-cli",
+  "db_path": "./data/bridge.db",
+  "default_model": "sonnet",
+  "queue_concurrency": 4,
+  "queue_timeout_ms": 120000,
+  "log_level": "info",
+  "bot_display_name": "My Bot",
+  "engine_claude_binary": "claude",
+  "engine_concurrency": 1,
+  "engine_timeout_ms": 180000,
+  "reply_max_chars": 3000,
+
+  "_comment_governance": "Governance — all costs are NOTIONAL (fairness units, not billing)",
+  "daily_message_cap": 50,
+  "rate_table": {
+    "inputPerMtok": 3.0,
+    "outputPerMtok": 15.0,
+    "cacheReadPerMtok": 0.30,
+    "cacheWritePerMtok": 3.75
+  },
+  "classifier_interval_ms": 300000,
+  "auto_tighten": {
+    "spamDenyRate": 0.4,
+    "spamVolume": 15,
+    "capReductionFactor": 0.5,
+    "capFloor": 5
+  },
+  "stuck_nudge_enabled": false
+}
