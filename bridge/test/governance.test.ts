@@ -316,12 +316,25 @@ describe("audit-log", () => {
 
   it("writes all supported event types without throwing", () => {
     const types = [
-      "msg_in", "run_started", "run_done", "reply_sent",
+      "msg_in", "run_started", "run_done", "run_failed", "reply_sent",
       "reply_failed", "quota_denied", "quota_auto_tightened", "cohort_changed",
     ] as const;
     for (const eventType of types) {
       assert.doesNotThrow(() => audit(db, { projectId, eventType }));
     }
+  });
+
+  it("run_failed audit row stores error payload and is queryable", () => {
+    const payload = { larkMessageId: "om_fail_1", error: "timeout after 60000ms" };
+    audit(db, { projectId, chatId: "oc_fail", userId: "ou_fail_unique", eventType: "run_failed", payload });
+    const row = db.prepare(
+      "SELECT event_type, payload_json FROM audit_log WHERE event_type = 'run_failed' AND user_id = 'ou_fail_unique' LIMIT 1",
+    ).get() as { event_type: string; payload_json: string } | undefined;
+    assert.ok(row, "run_failed row must exist");
+    assert.equal(row!.event_type, "run_failed");
+    const parsed = JSON.parse(row!.payload_json) as typeof payload;
+    assert.equal(parsed.larkMessageId, "om_fail_1");
+    assert.equal(parsed.error, "timeout after 60000ms");
   });
 });
 

@@ -48,6 +48,7 @@ Next.js dashboard @ :9820 reads SQLite + live activity.
 | 06 | [Governance (notional cost, quota cap, cohorts, audit)](phase-06-governance-quota-cost.md) | **complete** | 2d | 03,05 |
 | 07 | [Web dashboard (Next.js :9820, QR add-platform)](phase-07-web-dashboard.md) | **complete** | 1.5d | 06 |
 | 08 | [Tests + ops (supervision, restart, backup, deploy)](phase-08-tests-and-ops.md) | **complete** | 1d | 02-07 |
+| 09 | [Agent admin UI + accurate token metrics](phase-09-agent-admin-and-metrics.md) | **complete** | 1d | 07,08 |
 
 Critical path: 01 → 02/03 → 04 → 05 → 06 → 07 → 08. Phases 02 and 03 can run in parallel after 01.
 MVP cut (80/20): phases 01-04 = **DONE** — working @mention chatbot with memory. 05-07 = the commercial layer.

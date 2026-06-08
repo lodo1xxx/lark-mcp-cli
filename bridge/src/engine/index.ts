@@ -114,21 +114,34 @@ export async function runEngineJob(
       console.warn(`[engine] resolve-agent failed for chat ${job.chatId}: ${String(err)} — running without agent config`);
     }
 
-    const result = await runWithResume({
-      db,
-      binary: cfg.binary,
-      chatId: job.chatId,
-      projectId: job.projectId,
-      agentId: resolvedAgentId,
-      baseReq: {
-        prompt: job.text,
-        model: agentModel,
-        timeoutMs: cfg.timeoutMs,
-        cwd: agentCwd,
-        mcpConfigPath: agentMcpConfigPath,
-        allowedTools: agentAllowedTools,
-      },
-    });
+    let result: RunResult;
+    try {
+      result = await runWithResume({
+        db,
+        binary: cfg.binary,
+        chatId: job.chatId,
+        projectId: job.projectId,
+        agentId: resolvedAgentId,
+        baseReq: {
+          prompt: job.text,
+          model: agentModel,
+          timeoutMs: cfg.timeoutMs,
+          cwd: agentCwd,
+          mcpConfigPath: agentMcpConfigPath,
+          allowedTools: agentAllowedTools,
+        },
+      });
+    } catch (err) {
+      const errCode = err instanceof Error ? err.message : String(err);
+      audit(db, {
+        projectId: job.projectId,
+        chatId: job.chatId,
+        userId: job.userId,
+        eventType: "run_failed",
+        payload: { larkMessageId: job.larkMessageId, error: errCode },
+      });
+      throw err;
+    }
 
     persistUsage(db, job, result, cfg.rateTable);
 

@@ -8,6 +8,7 @@ export type AuditEventType =
   | "msg_in"
   | "run_started"
   | "run_done"
+  | "run_failed"
   | "reply_sent"
   | "reply_failed"
   | "quota_denied"

@@ -119,6 +119,110 @@ export function getAgentsForProject(projectId: number): { id: number; name: stri
   ).all(projectId) as { id: number; name: string }[];
 }
 
+// ─── Agents list with full details ────────────────────────────────────────────
+
+export interface AgentDetail {
+  id: number;
+  project_id: number;
+  name: string;
+  model: string;
+  effort: string | null;
+  enabled: number;
+  folder_path: string;
+  created_at: string;
+  binding_count: number;
+}
+
+export function getAllAgents(): AgentDetail[] {
+  const db = getReadDb();
+  return db.prepare(
+    `SELECT a.id, a.project_id, a.name, a.model, a.effort, a.enabled,
+            a.folder_path, a.created_at,
+            COUNT(cb.id) as binding_count
+     FROM agents a
+     LEFT JOIN chat_bindings cb ON cb.agent_id = a.id AND cb.enabled = 1
+     GROUP BY a.id
+     ORDER BY a.name`,
+  ).all() as AgentDetail[];
+}
+
+// ─── Per-agent token + cost rollup ───────────────────────────────────────────
+// Join path: quota_usage → messages (chat_id) → sessions (agent_id via chat_id PK)
+// sessions.chat_id PK maps chat_id → agent_id reliably for active sessions.
+// Fallback join via chat_bindings for chats without sessions.
+
+export interface AgentUsageRow {
+  agent_id: number;
+  agent_name: string;
+  run_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  total_tokens: number;
+  notional_cost_usd: number;
+}
+
+export function getAgentUsageRollup(): AgentUsageRow[] {
+  const db = getReadDb();
+  // Join via sessions first (most reliable), fall back to chat_bindings.
+  // Use COALESCE to pick whichever join resolves agent_id.
+  return db.prepare(
+    `SELECT
+       a.id as agent_id,
+       a.name as agent_name,
+       COUNT(q.id) as run_count,
+       COALESCE(SUM(q.input_tokens), 0) as input_tokens,
+       COALESCE(SUM(q.output_tokens), 0) as output_tokens,
+       COALESCE(SUM(q.cache_read_tokens), 0) as cache_read_tokens,
+       COALESCE(SUM(q.cache_write_tokens), 0) as cache_write_tokens,
+       COALESCE(SUM(q.input_tokens + q.output_tokens + q.cache_read_tokens + q.cache_write_tokens), 0) as total_tokens,
+       COALESCE(SUM(q.notional_cost_usd), 0) as notional_cost_usd
+     FROM agents a
+     LEFT JOIN quota_usage q ON q.id IN (
+       SELECT qu.id FROM quota_usage qu
+       JOIN messages m ON m.id = qu.message_id
+       LEFT JOIN sessions s ON s.chat_id = m.chat_id
+       LEFT JOIN chat_bindings cb ON cb.chat_id = m.chat_id AND cb.enabled = 1
+       WHERE COALESCE(s.agent_id, cb.agent_id) = a.id
+     )
+     GROUP BY a.id
+     ORDER BY notional_cost_usd DESC`,
+  ).all() as AgentUsageRow[];
+}
+
+// ─── Run success rate (audit-based) ──────────────────────────────────────────
+
+export interface RunStats {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  success_rate: number;
+}
+
+export function getRunStats(periodDays = 1): RunStats {
+  const db = getReadDb();
+  const sinceExpr = periodDays === 1
+    ? `date(created_at) = date('now')`
+    : `datetime(created_at) >= datetime('now', '-${Math.floor(periodDays)} days')`;
+
+  const attempted = (db.prepare(
+    `SELECT COUNT(*) as n FROM audit_log WHERE event_type = 'run_started' AND ${sinceExpr}`,
+  ).get() as { n: number }).n;
+
+  const succeeded = (db.prepare(
+    `SELECT COUNT(*) as n FROM audit_log WHERE event_type = 'run_done' AND ${sinceExpr}`,
+  ).get() as { n: number }).n;
+
+  const failed = (db.prepare(
+    `SELECT COUNT(*) as n FROM audit_log WHERE event_type = 'run_failed' AND ${sinceExpr}`,
+  ).get() as { n: number }).n;
+
+  const success_rate = attempted > 0 ? (succeeded / attempted) * 100 : 100;
+
+  return { attempted, succeeded, failed, success_rate };
+}
+
 // ─── Insights ─────────────────────────────────────────────────────────────────
 
 export interface CohortCount {
@@ -166,10 +270,19 @@ export function getStuckSessions(staleHours = 2, limit = 10): StuckUser[] {
   ).all(`-${staleHours}`, limit) as StuckUser[];
 }
 
+// ─── Token breakdown + cache stats ───────────────────────────────────────────
+// Cache-hit % formula: cache_read / (input + cache_read + cache_write)
+// This is the "input-side total" — all tokens that could have been freshly computed.
+// Example: input=16, cache_read=43930, cache_write=74236
+//   hit% = 43930 / (16 + 43930 + 74236) = 43930 / 118182 ≈ 37.2%
+//   (NOT 43930/(16+43930)=99.96% which ignores cache_write in denominator)
+
 export interface CacheStats {
   cache_read_tokens: number;
   cache_write_tokens: number;
   input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
   hit_pct: number;
 }
 
@@ -179,13 +292,23 @@ export function getCacheStats(): CacheStats {
     `SELECT
        COALESCE(SUM(cache_read_tokens), 0) as cache_read_tokens,
        COALESCE(SUM(cache_write_tokens), 0) as cache_write_tokens,
-       COALESCE(SUM(input_tokens), 0) as input_tokens
+       COALESCE(SUM(input_tokens), 0) as input_tokens,
+       COALESCE(SUM(output_tokens), 0) as output_tokens,
+       COALESCE(SUM(input_tokens + output_tokens + cache_read_tokens + cache_write_tokens), 0) as total_tokens
      FROM quota_usage
      WHERE date(created_at) = date('now')`,
-  ).get() as { cache_read_tokens: number; cache_write_tokens: number; input_tokens: number };
+  ).get() as {
+    cache_read_tokens: number;
+    cache_write_tokens: number;
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
 
-  const total = row.cache_read_tokens + row.input_tokens;
-  const hit_pct = total > 0 ? (row.cache_read_tokens / total) * 100 : 0;
+  // Correct denominator: all input-side tokens (fresh + cache_read + cache_write)
+  const inputSideTotal = row.input_tokens + row.cache_read_tokens + row.cache_write_tokens;
+  const hit_pct = inputSideTotal > 0 ? (row.cache_read_tokens / inputSideTotal) * 100 : 0;
+
   return { ...row, hit_pct };
 }
 
